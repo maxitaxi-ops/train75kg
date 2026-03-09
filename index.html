@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Train">
+<title>Train · 75kg</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --card: #1c1c1e;
+  --card2: #242426;
+  --border: #2c2c2e;
+  --accent: #d4ff00;
+  --accent2: #ff6b35;
+  --cardio: #00c9a7;
+  --strength: #ff6b35;
+  --combo: #f7c948;
+  --rest: #48484a;
+  --text: #f5f5f7;
+  --muted: #8e8e93;
+  --safe-top: env(safe-area-inset-top, 44px);
+  --safe-bottom: env(safe-area-inset-bottom, 34px);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── LAYOUT ── */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 430px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* ── STATUS BAR SPACE ── */
+.status-bar {
+  height: calc(var(--safe-top));
+  min-height: 44px;
+  flex-shrink: 0;
+}
+
+/* ── HEADER ── */
+.app-header {
+  padding: 0 20px 12px;
+  flex-shrink: 0;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2px;
+}
+
+.app-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.6rem;
+  line-height: 1;
+  letter-spacing: 1px;
+  color: var(--accent);
+}
+
+.app-title span { color: var(--text); }
+
+.weight-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.weight-badge .current {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+.weight-badge .goal {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.4rem;
+  color: var(--accent);
+  line-height: 1;
+}
+
+/* Progress bar */
+.progress-strip {
+  display: flex;
+  gap: 3px;
+  margin-top: 8px;
+}
+
+.prog-seg {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.prog-seg-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: width 0.6s ease;
+}
+
+/* ── PHASE TABS ── */
+.phase-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 0 20px 12px;
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.phase-tabs::-webkit-scrollbar { display: none; }
+
+.phase-tab {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.phase-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
+  font-weight: 500;
+}
+
+/* ── SCROLL AREA ── */
+.scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 0 16px;
+  padding-bottom: calc(80px + var(--safe-bottom));
+}
+.scroll-area::-webkit-scrollbar { display: none; }
+
+/* ── WEEK SECTION ── */
+.week-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin: 16px 0 8px 4px;
+}
+
+/* ── DAY CARD ── */
+.day-card {
+  background: var(--card);
+  border-radius: 16px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  transition: opacity 0.2s;
+}
+
+.day-card.completed {
+  opacity: 0.55;
+}
+
+.day-header {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  gap: 12px;
+  cursor: pointer;
+  position: relative;
+}
+
+.day-type-bar {
+  width: 4px;
+  height: 44px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.cardio .day-type-bar { background: var(--cardio); }
+.strength .day-type-bar { background: var(--strength); }
+.combo .day-type-bar { background: linear-gradient(var(--cardio), var(--strength)); }
+.rest .day-type-bar { background: var(--rest); }
+
+.day-info { flex: 1; min-width: 0; }
+
+.day-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.day-weekday {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.day-type-pill {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.5px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.cardio .day-type-pill { background: rgba(0,201,167,0.15); color: var(--cardio); }
+.strength .day-type-pill { background: rgba(255,107,53,0.15); color: var(--strength); }
+.combo .day-type-pill { background: rgba(247,201,72,0.15); color: var(--combo); }
+.rest .day-type-pill { background: rgba(72,72,74,0.3); color: var(--muted); }
+
+.day-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.3rem;
+  letter-spacing: 0.5px;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.day-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.day-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Chevron */
+.chevron {
+  width: 20px;
+  height: 20px;
+  color: var(--muted);
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+.day-card.open .chevron { transform: rotate(180deg); }
+.rest .chevron { display: none; }
+
+/* Tick checkbox */
+.tick-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.tick-btn.done {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.tick-btn svg { opacity: 0; transition: opacity 0.2s; }
+.tick-btn.done svg { opacity: 1; }
+
+/* ── EXERCISE PANEL ── */
+.exercise-panel {
+  display: none;
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--border);
+  animation: slideDown 0.25s ease;
+}
+
+.day-card.open .exercise-panel { display: block; }
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.exercise-section-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin: 12px 0 8px;
+}
+
+.exercise-list { display: flex; flex-direction: column; gap: 6px; }
+
+.exercise-item {
+  background: var(--card2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.ex-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.ex-info { flex: 1; min-width: 0; }
+
+.ex-name {
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-bottom: 1px;
+}
+
+.ex-detail {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--muted);
+}
+
+.ex-tip {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 2px;
+}
+
+/* Cardio instructions */
+.cardio-block {
+  background: var(--card2);
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.cardio-block h4 {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--cardio);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.cardio-steps { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+
+.cardio-steps li {
+  font-size: 0.78rem;
+  color: var(--text);
+  padding-left: 12px;
+  position: relative;
+  line-height: 1.4;
+}
+
+.cardio-steps li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--cardio);
+  font-size: 0.6rem;
+  top: 2px;
+}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  background: rgba(10,10,10,0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  padding: 10px 0 calc(10px + var(--safe-bottom));
+  z-index: 100;
+}
+
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 0.2s;
+}
+
+.nav-btn.active { color: var(--accent); }
+
+.nav-icon { font-size: 1.3rem; line-height: 1; }
+
+.nav-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.5px;
+}
+
+/* ── STATS VIEW ── */
+.stats-view {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: calc(80px + var(--safe-bottom));
+}
+
+.stats-view.visible { display: flex; }
+.days-view.hidden { display: none; }
+
+.stat-card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+}
+
+.stat-card h3 {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.big-stat {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 3rem;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.big-stat span {
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.stat-row:last-child { border-bottom: none; }
+
+.stat-row-label { font-size: 0.82rem; color: var(--muted); }
+.stat-row-val { font-family: 'DM Mono', monospace; font-size: 0.82rem; color: var(--text); }
+
+.completion-bar {
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.completion-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+/* ── NUTRITION VIEW ── */
+.nutrition-view {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: calc(80px + var(--safe-bottom));
+}
+
+.nutrition-view.visible { display: flex; }
+
+.nut-card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+}
+
+.nut-card h3 {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.nut-card .nut-highlight {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2rem;
+  color: var(--accent2);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.nut-card p {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.nut-tip {
+  background: rgba(212,255,0,0.07);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  padding: 10px 12px;
+  font-size: 0.8rem;
+  color: var(--text);
+  line-height: 1.5;
+  margin-top: 6px;
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="status-bar"></div>
+
+  <div class="app-header">
+    <div class="header-top">
+      <div class="app-title">TRAIN<br><span>75</span>KG</div>
+      <div class="weight-badge">
+        <div class="current">START 85–90KG</div>
+        <div class="goal">→ 75KG</div>
+        <div class="current" id="completed-count">0 / 84 days done</div>
+      </div>
+    </div>
+    <div class="progress-strip" id="progress-strip"></div>
+  </div>
+
+  <div class="phase-tabs">
+    <button class="phase-tab active" onclick="setPhase(1)">Phase 1 · Wk 1–4</button>
+    <button class="phase-tab" onclick="setPhase(2)">Phase 2 · Wk 5–8</button>
+    <button class="phase-tab" onclick="setPhase(3)">Phase 3 · Wk 9–12</button>
+  </div>
+
+  <div class="scroll-area">
+    <div class="days-view" id="days-view"></div>
+    <div class="stats-view" id="stats-view">
+      <div class="stat-card">
+        <h3>Overall Progress</h3>
+        <div class="big-stat" id="pct-done">0<span>%</span></div>
+        <div class="completion-bar"><div class="completion-fill" id="comp-fill" style="width:0%"></div></div>
+      </div>
+      <div class="stat-card">
+        <h3>Sessions Breakdown</h3>
+        <div class="stat-row"><span class="stat-row-label">✅ Completed</span><span class="stat-row-val" id="s-done">0</span></div>
+        <div class="stat-row"><span class="stat-row-label">🏃 Cardio sessions</span><span class="stat-row-val" id="s-cardio">0 done</span></div>
+        <div class="stat-row"><span class="stat-row-label">💪 Strength sessions</span><span class="stat-row-val" id="s-strength">0 done</span></div>
+        <div class="stat-row"><span class="stat-row-label">⚡ Combo sessions</span><span class="stat-row-val" id="s-combo">0 done</span></div>
+        <div class="stat-row"><span class="stat-row-label">😴 Rest days taken</span><span class="stat-row-val" id="s-rest">0</span></div>
+      </div>
+      <div class="stat-card">
+        <h3>Est. Calories Burned</h3>
+        <div class="big-stat" id="s-kcal">0<span> kcal</span></div>
+        <p style="font-size:0.75rem;color:var(--muted);margin-top:6px">Rough estimate based on session types and duration</p>
+      </div>
+      <div class="stat-card">
+        <h3>Expected Weight Loss</h3>
+        <div class="stat-row"><span class="stat-row-label">Weeks completed (est.)</span><span class="stat-row-val" id="s-weeks">0</span></div>
+        <div class="stat-row"><span class="stat-row-label">Expected loss so far</span><span class="stat-row-val" id="s-loss">0 kg</span></div>
+        <div class="stat-row"><span class="stat-row-label">Projected end weight</span><span class="stat-row-val" id="s-proj">~88 kg</span></div>
+      </div>
+    </div>
+    <div class="nutrition-view" id="nutrition-view">
+      <div class="nut-card">
+        <h3>Daily Calorie Target</h3>
+        <div class="nut-highlight">1,900–2,200</div>
+        <p>Roughly 500 kcal below maintenance. Maintenance for 85–90 kg + office work + training is ~2,400–2,700 kcal/day.</p>
+        <div class="nut-tip">Don't go below 1,800 kcal — too deep a deficit kills muscle and energy for training.</div>
+      </div>
+      <div class="nut-card">
+        <h3>Protein — Non-Negotiable</h3>
+        <div class="nut-highlight">140–170g</div>
+        <p>1.6–2.0g per kg of bodyweight. Preserves muscle while losing fat. Chicken, salmon, eggs, Greek yogurt, cottage cheese, lentils.</p>
+        <div class="nut-tip">Hitting protein is more important than hitting a calorie number exactly.</div>
+      </div>
+      <div class="nut-card">
+        <h3>Carb Timing</h3>
+        <p style="margin-bottom:8px">Eat most carbs around your training window. Oats before, rice or potatoes after.</p>
+        <div class="stat-row"><span class="stat-row-label">Pre-workout (60–90 min before)</span><span class="stat-row-val" style="font-size:0.75rem">Banana + protein</span></div>
+        <div class="stat-row"><span class="stat-row-label">Post-workout (within 45 min)</span><span class="stat-row-val" style="font-size:0.75rem">Rice + chicken</span></div>
+        <div class="stat-row"><span class="stat-row-label">Evenings</span><span class="stat-row-val" style="font-size:0.75rem">Lower carb</span></div>
+      </div>
+      <div class="nut-card">
+        <h3>Hydration</h3>
+        <div class="nut-highlight">2.5–3.5L</div>
+        <p>Water per day. Add electrolytes for sessions over 45 min. Coffee is fine and can boost performance. Limit alcohol — it stalls fat loss significantly.</p>
+      </div>
+      <div class="nut-card">
+        <h3>Weekend Strategy</h3>
+        <p>Allow one social meal. Use Saturday's long session to offset. Keep alcohol to a minimum — even 2–3 drinks on Friday night can erase 2 days of deficit.</p>
+        <div class="nut-tip">Consistency over 12 weeks beats perfection for 3 days then a blowout weekend.</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" id="nav-train" onclick="showView('train')">
+      <div class="nav-icon">🏃</div>
+      <div class="nav-label">TRAINING</div>
+    </button>
+    <button class="nav-btn" id="nav-stats" onclick="showView('stats')">
+      <div class="nav-icon">📊</div>
+      <div class="nav-label">PROGRESS</div>
+    </button>
+    <button class="nav-btn" id="nav-nut" onclick="showView('nutrition')">
+      <div class="nav-icon">🥗</div>
+      <div class="nav-label">NUTRITION</div>
+    </button>
+  </nav>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+
+const DAYS = [
+  // PHASE 1 — Weeks 1–4
+  // Week 1
+  { phase:1, week:1, weekday:'Monday',    type:'cardio',   title:'Steady State Run',    meta:'30 min · Zone 2 · ~65% max HR',
+    cardio: { title:'How to do it', steps:['Warm up: 5 min brisk walk','Run at conversational pace — you should be able to speak in sentences','If you can\'t talk, slow down','Cool down: 5 min walk + light stretching','Heart rate target: 120–135 bpm'] } },
+  { phase:1, week:1, weekday:'Tuesday',   type:'strength', title:'Upper Body',           meta:'45 min · 3 sets × 10–12 reps',
+    exercises:[
+      { icon:'🏋️', name:'Bench Press / Push-Up', sets:'3 × 10', tip:'Keep elbows at 45°, full range of motion' },
+      { icon:'🔁', name:'Dumbbell Row', sets:'3 × 10 each side', tip:'Pull elbow back, not up — squeeze shoulder blade' },
+      { icon:'💪', name:'Overhead Dumbbell Press', sets:'3 × 10', tip:'Press straight up, core tight, don\'t arch back' },
+      { icon:'🔄', name:'Lat Pulldown / Band Pull-Down', sets:'3 × 12', tip:'Pull to upper chest, controlled on the way up' },
+      { icon:'〰️', name:'Tricep Pushdown', sets:'3 × 12', tip:'Keep elbows fixed at sides' },
+      { icon:'🦾', name:'Bicep Curl', sets:'3 × 12', tip:'Slow on the way down — 3 seconds eccentric' },
+    ]},
+  { phase:1, week:1, weekday:'Wednesday', type:'cardio',   title:'Cycling / Elliptical', meta:'35 min · Steady · Low impact',
+    cardio: { title:'Session structure', steps:['Warm up: 5 min easy','Main: 25 min at moderate steady pace — low impact on joints','Keep RPM/cadence consistent throughout','Cool down: 5 min easy spin','Good option if legs are sore from Tuesday'] } },
+  { phase:1, week:1, weekday:'Thursday',  type:'strength', title:'Lower Body',           meta:'45 min · 3 sets × 10 reps',
+    exercises:[
+      { icon:'🦵', name:'Goblet Squat / Barbell Squat', sets:'3 × 10', tip:'Chest up, knees track over toes, go to parallel' },
+      { icon:'🔀', name:'Romanian Deadlift', sets:'3 × 10', tip:'Hinge at hips, soft knee, bar stays close to legs' },
+      { icon:'👣', name:'Walking Lunges', sets:'3 × 10 each leg', tip:'Long step, back knee to 1 inch from floor' },
+      { icon:'🦿', name:'Leg Press', sets:'3 × 12', tip:'Feet shoulder-width, full range without locking knees' },
+      { icon:'🔼', name:'Calf Raises', sets:'3 × 15', tip:'Full stretch at bottom, pause at top' },
+      { icon:'🏋', name:'Plank', sets:'3 × 30 sec', tip:'Neutral spine, breathe steadily, don\'t let hips drop' },
+    ]},
+  { phase:1, week:1, weekday:'Friday',    type:'cardio',   title:'Brisk Walk / Row', meta:'40 min · Active recovery pace',
+    cardio: { title:'Active recovery', steps:['This is intentionally easy — let the body absorb the week\'s work','Walk outdoors at a fast pace, or 30 min easy rowing machine','Heart rate should stay below 120 bpm','Focus on breathing and clearing your head','Stretch after — hip flexors, hamstrings, calves'] } },
+  { phase:1, week:1, weekday:'Saturday',  type:'combo',    title:'Full Body + Cardio', meta:'30 min strength + 20 min cardio',
+    exercises:[
+      { icon:'🏋️', name:'Dumbbell Squat to Press', sets:'3 × 10', tip:'Squat down, press as you stand — full body movement' },
+      { icon:'🔁', name:'Dumbbell Row', sets:'3 × 10', tip:'Keep back flat, row from hip, not shoulder' },
+      { icon:'🤸', name:'Push-Ups', sets:'3 × 12', tip:'Can do on knees — focus on full range' },
+      { icon:'🏃', name:'20 min Cardio Finisher', sets:'Steady Zone 2', tip:'Run, cycle or row — keep it controlled after lifting' },
+    ]},
+  { phase:1, week:1, weekday:'Sunday',    type:'rest',     title:'Rest & Recovery', meta:'No training today', exercises:[] },
+
+  // Weeks 2–4: duplicate with slight progression notes
+  ...([2,3,4]).flatMap(w => [
+    { phase:1, week:w, weekday:'Monday',    type:'cardio',   title:`Steady Run (+${(w-1)*2} min)`, meta:`${30+(w-1)*2} min · Zone 2`,
+      cardio:{ title:'Progression', steps:[`Add ${(w-1)*2} minutes vs week 1`,'Same conversational pace','Focus on keeping heart rate steady','Aim to run without stopping','Note your perceived effort — it should feel easier each week'] } },
+    { phase:1, week:w, weekday:'Tuesday',   type:'strength', title:'Upper Body', meta:`45 min · 3×${10+(w-1)}`,
+      exercises:[
+        { icon:'🏋️', name:'Bench Press / Push-Up', sets:`3 × ${10+(w-1)}`, tip:'Add small weight each week if form is solid' },
+        { icon:'🔁', name:'Dumbbell Row', sets:`3 × ${10+(w-1)} each`, tip:'Progressive overload — add 1–2 kg vs last week' },
+        { icon:'💪', name:'Overhead Press', sets:`3 × ${10+(w-1)}`, tip:'Keep core tight, press vertical' },
+        { icon:'🔄', name:'Lat Pulldown', sets:`3 × ${12+(w-1)}`, tip:'Control the eccentric' },
+        { icon:'〰️', name:'Tricep Pushdown', sets:`3 × ${12+(w-1)}`, tip:'Full extension at bottom' },
+        { icon:'🦾', name:'Bicep Curl', sets:`3 × ${12+(w-1)}`, tip:'Slow negatives' },
+      ]},
+    { phase:1, week:w, weekday:'Wednesday', type:'cardio',   title:'Cycling / Elliptical', meta:`${35+(w-1)*3} min · Steady`,
+      cardio:{ title:'Session', steps:[`${35+(w-1)*3} minutes at steady effort`,'Increase resistance slightly vs last week','Maintain cadence','Zone 2 — conversational pace','Stretch calves and quads after'] } },
+    { phase:1, week:w, weekday:'Thursday',  type:'strength', title:'Lower Body', meta:`45 min · 3×${10+(w-1)}`,
+      exercises:[
+        { icon:'🦵', name:'Squat', sets:`3 × ${10+(w-1)}`, tip:'Add weight if you hit all reps with good form' },
+        { icon:'🔀', name:'Romanian Deadlift', sets:`3 × ${10+(w-1)}`, tip:'Feel hamstring stretch at bottom' },
+        { icon:'👣', name:'Lunges', sets:`3 × ${10+(w-1)} each`, tip:'Add dumbbells if bodyweight is easy' },
+        { icon:'🦿', name:'Leg Press', sets:`3 × ${12+(w-1)}`, tip:'Progressive resistance' },
+        { icon:'🔼', name:'Calf Raises', sets:`3 × ${15+(w-1)}`, tip:'Weighted if bodyweight is easy' },
+        { icon:'🏋', name:'Plank', sets:`3 × ${30+w*5} sec`, tip:'Quality over duration' },
+      ]},
+    { phase:1, week:w, weekday:'Friday',    type:'cardio',   title:'Easy Cardio', meta:`${40+(w-1)*2} min · Recovery pace`,
+      cardio:{ title:'Active recovery', steps:['Keep it gentle — this is not a hard day','Walk, row or easy cycle','Below 120 bpm heart rate','Mobility work: 10 min after','Get 8 hrs sleep tonight to set up the weekend'] } },
+    { phase:1, week:w, weekday:'Saturday',  type:'combo',    title:'Full Body + Cardio', meta:`${30+w*2} min strength + ${20+w*2} min cardio`,
+      exercises:[
+        { icon:'🏋️', name:'Dumbbell Squat to Press', sets:`3 × ${10+(w-1)}`, tip:'Explosive from squat, controlled press' },
+        { icon:'🤸', name:'Push-Ups', sets:`3 × ${12+(w-1)}`, tip:'Add weight vest or elevate feet for progression' },
+        { icon:'🔁', name:'Bent-Over Row', sets:`3 × ${10+(w-1)}`, tip:'Keep back parallel to floor' },
+        { icon:'🏃', name:`${20+w*2} min Cardio`, sets:'Zone 2', tip:'Run or cycle — controlled pace after lifting' },
+      ]},
+    { phase:1, week:w, weekday:'Sunday',    type:'rest', title:'Rest & Recovery', meta:'Full rest — earned it', exercises:[] },
+  ]),
+
+  // PHASE 2 — Weeks 5–8
+  ...([5,6,7,8]).flatMap(w => [
+    { phase:2, week:w, weekday:'Monday',    type:'cardio',   title:'HIIT Run', meta:`25 min · Intervals · 1 min hard / 2 min easy`,
+      cardio:{ title:'HIIT Protocol', steps:['Warm up: 5 min easy jog','Intervals: 1 min at 85–90% max HR, then 2 min easy jog','Repeat 6–8 times','Cool down: 5 min walk',`Week ${w}: aim for ${5+(w-5)} intervals`] } },
+    { phase:2, week:w, weekday:'Tuesday',   type:'strength', title:'Push Day', meta:'50 min · 4 sets × 8 reps',
+      exercises:[
+        { icon:'🏋️', name:'Barbell / DB Bench Press', sets:'4 × 8', tip:'Heavier than Phase 1 — 70–75% of max' },
+        { icon:'💪', name:'Overhead Press', sets:'4 × 8', tip:'Standing for more core activation' },
+        { icon:'📐', name:'Incline DB Press', sets:'3 × 10', tip:'Hit upper chest — 30° incline' },
+        { icon:'〰️', name:'Tricep Dips / Pushdown', sets:'3 × 12', tip:'Lock out at bottom of dip' },
+        { icon:'🔼', name:'Lateral Raises', sets:'3 × 15', tip:'Light weight, controlled arc' },
+        { icon:'🏋', name:'Ab Wheel / Plank', sets:'3 × 45 sec', tip:'Core braced throughout' },
+      ]},
+    { phase:2, week:w, weekday:'Wednesday', type:'cardio',   title:'Tempo Run', meta:`35 min · Zone 3 · Comfortably hard`,
+      cardio:{ title:'Tempo structure', steps:['Warm up: 5 min easy','Tempo: 25 min at effort level where speaking is hard — just phrases, not sentences','Heart rate: 140–160 bpm','This is the most effective fat-burning zone','Cool down: 5 min easy + stretching'] } },
+    { phase:2, week:w, weekday:'Thursday',  type:'strength', title:'Pull + Legs', meta:'50 min · 4 × 8 reps',
+      exercises:[
+        { icon:'🔄', name:'Pull-Ups / Lat Pulldown', sets:'4 × 8', tip:'Full hang at bottom, chin over bar at top' },
+        { icon:'🔁', name:'Barbell Row', sets:'4 × 8', tip:'Pull to lower chest, not upper — more lat activation' },
+        { icon:'🦵', name:'Barbell Back Squat', sets:'4 × 8', tip:'Heavy — 70–75% max, full depth' },
+        { icon:'🔀', name:'Romanian Deadlift', sets:'4 × 8', tip:'Push hips back, weight close to legs' },
+        { icon:'🦾', name:'Face Pulls', sets:'3 × 15', tip:'Great for shoulder health and posture' },
+        { icon:'👣', name:'Bulgarian Split Squat', sets:'3 × 10 each', tip:'Brutal but effective — rear foot elevated' },
+      ]},
+    { phase:2, week:w, weekday:'Friday',    type:'combo',    title:'Circuit Training', meta:'45 min · Minimal rest · Strength + HR',
+      exercises:[
+        { icon:'⚡', name:'Kettlebell Swing', sets:'4 × 15', tip:'Hip hinge drive — not a squat' },
+        { icon:'🏋️', name:'DB Thrusters (Squat to Press)', sets:'4 × 10', tip:'No rest between squat and press' },
+        { icon:'🤸', name:'Burpees', sets:'4 × 8', tip:'Full push-up at bottom, jump at top' },
+        { icon:'🔁', name:'TRX / Band Row', sets:'4 × 12', tip:'Keep body rigid, squeeze at end' },
+        { icon:'🏃', name:'Mountain Climbers', sets:'4 × 20 each', tip:'Keep hips low, fast feet' },
+        { icon:'🏋', name:'Dead Bug (core)', sets:'3 × 10 each side', tip:'Lower back pressed to floor throughout' },
+      ]},
+    { phase:2, week:w, weekday:'Saturday',  type:'cardio',   title:'Long Steady State', meta:`${50+(w-5)*3} min · Zone 2 · Run / Cycle / Row`,
+      cardio:{ title:'Long session', steps:[`${50+(w-5)*3} minutes — longest session of the week`,'Zone 2 throughout — this burns fat directly','Bring water, go at a pace you can maintain','Listen to a podcast — this should feel manageable','Reward yourself after — this is the engine of your fat loss'] } },
+    { phase:2, week:w, weekday:'Sunday',    type:'rest', title:'Rest & Recovery', meta:'Mobility work optional', exercises:[] },
+  ]),
+
+  // PHASE 3 — Weeks 9–12
+  ...([9,10,11,12]).flatMap(w => [
+    { phase:3, week:w, weekday:'Monday',    type:'cardio',   title:'Tabata / Sprints', meta:'20 min · 20s on / 10s off',
+      cardio:{ title:'Tabata Protocol', steps:['Warm up: 5 min','Tabata: 20 sec ALL OUT, 10 sec complete rest','Repeat 8 rounds = 4 minutes, rest 1 min, repeat x4','Options: sprint, cycling, rowing, jump rope','This is the hardest cardio session — max effort means max burn'] } },
+    { phase:3, week:w, weekday:'Tuesday',   type:'strength', title:'Push + Core', meta:'55 min · 4 sets × 6–8 reps · Heavy',
+      exercises:[
+        { icon:'🏋️', name:'Bench Press', sets:'4 × 6', tip:'75–80% of 1RM — heavier than phase 2' },
+        { icon:'💪', name:'Standing Overhead Press', sets:'4 × 6', tip:'Log press stance — full body tension' },
+        { icon:'📐', name:'Cable Fly / DB Fly', sets:'3 × 12', tip:'Stretch at bottom, squeeze at top' },
+        { icon:'〰️', name:'Close-Grip Bench / Dips', sets:'3 × 10', tip:'Tricep focus — lock out at top' },
+        { icon:'🏋', name:'Ab Wheel Rollout', sets:'4 × 10', tip:'Control the rollout — don\'t collapse' },
+        { icon:'🔄', name:'Hanging Knee Raise', sets:'3 × 15', tip:'Tuck knees to chest, controlled descent' },
+      ]},
+    { phase:3, week:w, weekday:'Wednesday', type:'combo',    title:'Run + Pull Day', meta:'20 min run + 35 min pull session',
+      exercises:[
+        { icon:'🏃', name:'20 min Tempo Run', sets:'Zone 3–4', tip:'Start the session with cardio while fresh' },
+        { icon:'🔄', name:'Weighted Pull-Ups', sets:'4 × 6–8', tip:'Add a dumbbell between knees or use a belt' },
+        { icon:'🔁', name:'Pendlay Row', sets:'4 × 6', tip:'Bar dead-stops on floor each rep — explosive pull' },
+        { icon:'🦾', name:'Face Pull + External Rotation', sets:'3 × 15', tip:'Shoulder health — don\'t skip this' },
+        { icon:'🔀', name:'Single-Leg RDL', sets:'3 × 8 each', tip:'Balance challenge — slow and controlled' },
+      ]},
+    { phase:3, week:w, weekday:'Thursday',  type:'cardio',   title:'Tempo + Hills', meta:'40 min · Mixed Zone 3–4',
+      cardio:{ title:'Hill session', steps:['Warm up: 5 min easy','Find a hill or set treadmill to 4–6% incline','Run 3 min up (or incline), 2 min easy flat — repeat 6x','Hills build leg strength AND burn more calories than flat running','Cool down: 5 min walk, then stretch glutes and calves'] } },
+    { phase:3, week:w, weekday:'Friday',    type:'strength', title:'Legs + Core', meta:'55 min · Heavy compound lifts',
+      exercises:[
+        { icon:'🦵', name:'Barbell Back Squat', sets:'4 × 6', tip:'Heaviest of the program — focus on form above all' },
+        { icon:'🔀', name:'Romanian Deadlift', sets:'4 × 6', tip:'Slow eccentric — 3–4 seconds down' },
+        { icon:'👣', name:'Bulgarian Split Squat', sets:'3 × 8 each', tip:'Add dumbbells — this builds single-leg power' },
+        { icon:'🔼', name:'Weighted Calf Raises', sets:'4 × 15', tip:'Full range — pause at stretch' },
+        { icon:'🏋', name:'Ab Wheel Rollout', sets:'3 × 12', tip:'Core strength supports all heavy lifts' },
+        { icon:'🔄', name:'Russian Twist', sets:'3 × 20 total', tip:'Weighted — rotate fully each side' },
+      ]},
+    { phase:3, week:w, weekday:'Saturday',  type:'cardio',   title:`Longest Run · Wk ${w}`, meta:`${60+(w-9)*3} min · Zone 2 · Celebrate`,
+      cardio:{ title:'The long one', steps:[`${60+(w-9)*3} minutes — your longest run of the program`,'This is a milestone — take a route you love','Zone 2: slow enough to enjoy it','By week 12 this will feel different than week 1','After: stretch well, eat a good meal, be proud'] } },
+    { phase:3, week:w, weekday:'Sunday',    type:'rest', title:'Full Rest', meta:'Non-negotiable — sleep + eat well', exercises:[] },
+  ]),
+];
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let completed = JSON.parse(localStorage.getItem('train_completed') || '{}');
+let currentPhase = 1;
+let currentView = 'train';
+
+function saveCompleted() {
+  localStorage.setItem('train_completed', JSON.stringify(completed));
+}
+
+function dayKey(d) { return `p${d.phase}_w${d.week}_${d.weekday}`; }
+
+// ── RENDER ──────────────────────────────────────────────────────────────────
+function renderDays() {
+  const view = document.getElementById('days-view');
+  const days = DAYS.filter(d => d.phase === currentPhase);
+  const weeks = [...new Set(days.map(d => d.week))];
+
+  view.innerHTML = weeks.map(w => {
+    const wDays = days.filter(d => d.week === w);
+    return `<div class="week-label">Week ${w}</div>` +
+      wDays.map((d, i) => {
+        const key = dayKey(d);
+        const done = !!completed[key];
+        const hasEx = d.exercises && d.exercises.length > 0;
+        const hasCardio = !!d.cardio;
+        const expandable = hasEx || hasCardio;
+        return `
+        <div class="day-card ${d.type}${done?' completed':''}" id="card-${key}">
+          <div class="day-header" onclick="${expandable?`toggleCard('${key}')`:''}">
+            <div class="day-type-bar"></div>
+            <div class="day-info">
+              <div class="day-name-row">
+                <span class="day-weekday">${d.weekday}</span>
+                <span class="day-type-pill">${d.type.toUpperCase()}</span>
+              </div>
+              <div class="day-title">${d.title}</div>
+              <div class="day-meta">${d.meta}</div>
+            </div>
+            <div class="day-actions">
+              ${expandable?`<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>`:''}
+              <button class="tick-btn${done?' done':''}" onclick="event.stopPropagation();toggleDone('${key}')" aria-label="Mark complete">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+            </div>
+          </div>
+          ${expandable ? `<div class="exercise-panel" id="panel-${key}">
+            ${hasCardio ? renderCardio(d.cardio) : ''}
+            ${hasEx ? renderExercises(d.exercises) : ''}
+          </div>` : ''}
+        </div>`;
+      }).join('');
+  }).join('');
+
+  updateCounts();
+  updateProgress();
+}
+
+function renderExercises(exs) {
+  return `<div class="exercise-section-title">Exercises</div>
+  <div class="exercise-list">
+    ${exs.map(e => `
+    <div class="exercise-item">
+      <div class="ex-icon" style="background:rgba(255,107,53,0.12)">${e.icon}</div>
+      <div class="ex-info">
+        <div class="ex-name">${e.name}</div>
+        <div class="ex-detail">${e.sets}</div>
+        ${e.tip?`<div class="ex-tip">${e.tip}</div>`:''}
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+function renderCardio(c) {
+  return `<div class="cardio-block">
+    <h4>${c.title}</h4>
+    <ul class="cardio-steps">
+      ${c.steps.map(s=>`<li>${s}</li>`).join('')}
+    </ul>
+  </div>`;
+}
+
+function toggleCard(key) {
+  const card = document.getElementById(`card-${key}`);
+  card.classList.toggle('open');
+}
+
+function toggleDone(key) {
+  completed[key] = !completed[key];
+  if (!completed[key]) delete completed[key];
+  saveCompleted();
+  renderDays();
+}
+
+function updateCounts() {
+  const total = DAYS.filter(d => d.type !== 'rest').length;
+  const done = Object.keys(completed).filter(k => !k.includes('Sunday')).length;
+  document.getElementById('completed-count').textContent = `${done} / ${total} sessions done`;
+}
+
+function updateProgress() {
+  const strip = document.getElementById('progress-strip');
+  const weeks = [...new Set(DAYS.map(d => d.week))];
+  strip.innerHTML = weeks.map(w => {
+    const wDays = DAYS.filter(d => d.week === w && d.type !== 'rest');
+    const doneDays = wDays.filter(d => completed[dayKey(d)]).length;
+    const pct = wDays.length ? (doneDays / wDays.length) * 100 : 0;
+    return `<div class="prog-seg"><div class="prog-seg-fill" style="width:${pct}%"></div></div>`;
+  }).join('');
+}
+
+function updateStats() {
+  const allTraining = DAYS.filter(d => d.type !== 'rest');
+  const doneKeys = Object.keys(completed);
+  const doneDays = DAYS.filter(d => completed[dayKey(d)]);
+  const total = allTraining.length;
+  const done = doneDays.filter(d => d.type !== 'rest').length;
+  const pct = Math.round((done / total) * 100);
+
+  document.getElementById('pct-done').innerHTML = `${pct}<span>%</span>`;
+  document.getElementById('comp-fill').style.width = pct + '%';
+  document.getElementById('s-done').textContent = done;
+
+  const cardio = doneDays.filter(d => d.type === 'cardio').length;
+  const strength = doneDays.filter(d => d.type === 'strength').length;
+  const combo = doneDays.filter(d => d.type === 'combo').length;
+  const rest = doneDays.filter(d => d.type === 'rest').length;
+
+  document.getElementById('s-cardio').textContent = cardio + ' done';
+  document.getElementById('s-strength').textContent = strength + ' done';
+  document.getElementById('s-combo').textContent = combo + ' done';
+  document.getElementById('s-rest').textContent = rest;
+
+  const kcal = cardio * 380 + strength * 280 + combo * 420 + rest * 80;
+  document.getElementById('s-kcal').innerHTML = kcal.toLocaleString() + '<span> kcal</span>';
+
+  const weeksEst = Math.floor(done / 5);
+  const loss = (weeksEst * 0.6).toFixed(1);
+  const proj = Math.max(75, 87.5 - parseFloat(loss)).toFixed(1);
+  document.getElementById('s-weeks').textContent = weeksEst;
+  document.getElementById('s-loss').textContent = loss + ' kg';
+  document.getElementById('s-proj').textContent = '~' + proj + ' kg';
+}
+
+// ── NAVIGATION ──────────────────────────────────────────────────────────────
+function setPhase(p) {
+  currentPhase = p;
+  document.querySelectorAll('.phase-tab').forEach((btn, i) => {
+    btn.classList.toggle('active', i+1 === p);
+  });
+  renderDays();
+}
+
+function showView(v) {
+  currentView = v;
+  document.getElementById('days-view').classList.toggle('hidden', v !== 'train');
+  document.getElementById('stats-view').classList.toggle('visible', v === 'stats');
+  document.getElementById('nutrition-view').classList.toggle('visible', v === 'nutrition');
+  document.querySelectorAll('.phase-tabs')[0].style.visibility = v === 'train' ? 'visible' : 'hidden';
+  document.getElementById('nav-train').classList.toggle('active', v === 'train');
+  document.getElementById('nav-stats').classList.toggle('active', v === 'stats');
+  document.getElementById('nav-nut').classList.toggle('active', v === 'nutrition');
+  if (v === 'stats') updateStats();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+renderDays();
+</script>
+</body>
+</html>
